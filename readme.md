@@ -6,8 +6,8 @@ The code was mostly written via Anthropic's Claude Code. Many key suggestions ca
 
 ## Features
 
-* Press Control+Command+backtick to activate app 0 in your Dock (Finder).
-* Press Control+1-0 to activate the other apps in your Dock (from 1 to 10).
+* Press Option+E to activate app 0 in your Dock (Finder).
+* Press Option+1-0 to activate the other apps in your Dock (from 1 to 10).
 * Minimal and lightweight.
 * No external dependencies.
 * No AppleScript.
@@ -72,8 +72,8 @@ If the app is running but does not appear to work after granting all permissions
 
 Once `dock_hotkeys` is running and you've granted it accessibility permissions (and waited a few seconds for the change to be detected):
 
-* Press Control+Command+backtick to activate the first app in your Dock (Finder).
-* Press Control+1, Control+2 and so on until 0, to activate the other apps in your Dock.
+* Press Option+E to activate the first app in your Dock (Finder).
+* Press Option+1, Option+2 and so on until 0, to activate the other apps in your Dock.
 
 If launched in the foreground from a terminal, the app will keep running until you quit it with Control+C.
 

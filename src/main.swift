@@ -1,6 +1,6 @@
+import Carbon
 import Cocoa
 import Foundation
-import Carbon
 
 // UserDefaults for Dock preferences
 let dockUserDefaults = UserDefaults(suiteName: "com.apple.dock")!
@@ -8,20 +8,20 @@ let dockPrefKey = "persistent-apps"
 
 // Default hotkey mappings
 let hotkeyMappings: [Hotkey: Int] = [
-  // Control+Command+backtick (key code 50) for position 0 (always Finder).
-  Hotkey(keyCode: 50, modifiers: [.maskControl, .maskCommand]): 0,
+  // Option+E (key code 14) for position 0 (always Finder).
+  Hotkey(keyCode: 14, modifiers: .maskAlternate): 0,
 
-  // Control+1 through Control+0 for the rest.
-  Hotkey(keyCode: 18, modifiers: .maskControl): 1,  // Control+1 -> position 1
-  Hotkey(keyCode: 19, modifiers: .maskControl): 2,  // Control+2 -> position 2
-  Hotkey(keyCode: 20, modifiers: .maskControl): 3,  // Control+3 -> position 3
-  Hotkey(keyCode: 21, modifiers: .maskControl): 4,  // Control+4 -> position 4
-  Hotkey(keyCode: 23, modifiers: .maskControl): 5,  // Control+5 -> position 5
-  Hotkey(keyCode: 22, modifiers: .maskControl): 6,  // Control+6 -> position 6
-  Hotkey(keyCode: 26, modifiers: .maskControl): 7,  // Control+7 -> position 7
-  Hotkey(keyCode: 28, modifiers: .maskControl): 8,  // Control+8 -> position 8
-  Hotkey(keyCode: 25, modifiers: .maskControl): 9,  // Control+9 -> position 9
-  Hotkey(keyCode: 29, modifiers: .maskControl): 10, // Control+0 -> position 10
+  // Option+1 through Option+0 for the rest.
+  Hotkey(keyCode: 18, modifiers: .maskAlternate): 1,  // Option+1 -> position 1
+  Hotkey(keyCode: 19, modifiers: .maskAlternate): 2,  // Option+2 -> position 2
+  Hotkey(keyCode: 20, modifiers: .maskAlternate): 3,  // Option+3 -> position 3
+  Hotkey(keyCode: 21, modifiers: .maskAlternate): 4,  // Option+4 -> position 4
+  Hotkey(keyCode: 23, modifiers: .maskAlternate): 5,  // Option+5 -> position 5
+  Hotkey(keyCode: 22, modifiers: .maskAlternate): 6,  // Option+6 -> position 6
+  Hotkey(keyCode: 26, modifiers: .maskAlternate): 7,  // Option+7 -> position 7
+  Hotkey(keyCode: 28, modifiers: .maskAlternate): 8,  // Option+8 -> position 8
+  Hotkey(keyCode: 25, modifiers: .maskAlternate): 9,  // Option+9 -> position 9
+  Hotkey(keyCode: 29, modifiers: .maskAlternate): 10,  // Option+0 -> position 10
 ]
 
 // Observer class for UserDefaults changes
@@ -38,7 +38,10 @@ class PrefObs: NSObject {
     dockUserDefaults.removeObserver(self, forKeyPath: dockPrefKey)
   }
 
-  override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+  override func observeValue(
+    forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?,
+    context: UnsafeMutableRawPointer?
+  ) {
     guard keyPath == dockPrefKey else {
       super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
       return
@@ -107,7 +110,8 @@ class HotKeyManager {
   }
 
   func requestAccessibilityPermissions() -> Bool {
-    let options = [kAXTrustedCheckOptionPrompt.takeRetainedValue() as NSString: true] as CFDictionary
+    let options =
+      [kAXTrustedCheckOptionPrompt.takeRetainedValue() as NSString: true] as CFDictionary
     permissionsGranted = AXIsProcessTrustedWithOptions(options)
     return permissionsGranted
   }
@@ -194,14 +198,15 @@ class HotKeyManager {
     var appURLs: [Int: URL] = [:]
 
     // Add Finder at position 0 (it's always the first item in the Dock)
-    if let finderURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.Finder") {
+    if let finderURL = NSWorkspace.shared.urlForApplication(
+      withBundleIdentifier: "com.apple.Finder")
+    {
       appURLs[0] = finderURL
     }
 
     // Map persistent apps, adding 1 to index to account for Finder being at position 0
     for (ind, app) in persistentApps.enumerated() {
-      if
-        let val = app["tile-data"] as? [String: Any],
+      if let val = app["tile-data"] as? [String: Any],
         let val = val["bundle-identifier"] as? String,
         let val = NSWorkspace.shared.urlForApplication(withBundleIdentifier: val)
       {
@@ -217,37 +222,40 @@ class HotKeyManager {
     // Create an event tap to monitor key combinations.
     let eventMask = CGEventMask(1 << CGEventType.keyDown.rawValue)
 
-    guard let tap = CGEvent.tapCreate(
-      tap: .cgSessionEventTap,
-      place: .headInsertEventTap,
-      options: .defaultTap,
-      eventsOfInterest: eventMask,
-      callback: { (proxy, type, event, refcon) -> Unmanaged<CGEvent>? in
-        if type == .keyDown {
-          let manager = Unmanaged<HotKeyManager>.fromOpaque(refcon!).takeUnretainedValue()
-          let modifiers = event.flags.intersection([.maskControl, .maskCommand, .maskAlternate, .maskShift])
-          let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
-          let hotkey = Hotkey(keyCode: Int(keyCode), modifiers: modifiers)
+    guard
+      let tap = CGEvent.tapCreate(
+        tap: .cgSessionEventTap,
+        place: .headInsertEventTap,
+        options: .defaultTap,
+        eventsOfInterest: eventMask,
+        callback: { (proxy, type, event, refcon) -> Unmanaged<CGEvent>? in
+          if type == .keyDown {
+            let manager = Unmanaged<HotKeyManager>.fromOpaque(refcon!).takeUnretainedValue()
+            let modifiers = event.flags.intersection([
+              .maskControl, .maskCommand, .maskAlternate, .maskShift,
+            ])
+            let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
+            let hotkey = Hotkey(keyCode: Int(keyCode), modifiers: modifiers)
 
-          if
-            let val = hotkeyMappings[hotkey],
-            let val = manager.dockAppURLs[val]
-          {
-            // Dispatch to main thread to avoid blocking event tap
-            DispatchQueue.main.async {
-              manager.activateDockApp(appURL: val)
+            if let val = hotkeyMappings[hotkey],
+              let val = manager.dockAppURLs[val]
+            {
+              // Dispatch to main thread to avoid blocking event tap
+              DispatchQueue.main.async {
+                manager.activateDockApp(appURL: val)
+              }
+
+              // Consume the event
+              return nil
             }
-
-            // Consume the event
-            return nil
           }
-        }
 
-        // Pass through all other events.
-        return Unmanaged.passUnretained(event)
-      },
-      userInfo: Unmanaged.passUnretained(self).toOpaque()
-    ) else {
+          // Pass through all other events.
+          return Unmanaged.passUnretained(event)
+        },
+        userInfo: Unmanaged.passUnretained(self).toOpaque()
+      )
+    else {
       print("Failed to create event tap")
       return false
     }
@@ -325,8 +333,7 @@ class HotKeyManager {
 // Convert key code to human-readable string
 func keyCodeToString(keyCode: Int) -> String {
   // Create a CGEvent to simulate a key press
-  if
-    let val = CGEventSource(stateID: .hidSystemState),
+  if let val = CGEventSource(stateID: .hidSystemState),
     let val = CGEvent(keyboardEventSource: val, virtualKey: CGKeyCode(keyCode), keyDown: true),
     let val = NSEvent(cgEvent: val),
     let val = val.charactersIgnoringModifiers,
@@ -380,7 +387,8 @@ struct DockHotkeysApp {
       }
     } else {
       print("Please grant accessibility permissions when prompted")
-      print("(You may need to manually enable in System Settings → Privacy & Security → Accessibility)")
+      print(
+        "(You may need to manually enable in System Settings → Privacy & Security → Accessibility)")
       if verbose {
         print("You can continue granting permissions while the app is running")
       }
